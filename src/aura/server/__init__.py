@@ -5,11 +5,13 @@ and prosody deltas cross it, never audio (docs/DESIGN.md §7).
 """
 
 from aura.server.backends import ClaudeBackend, EchoBackend
+from aura.server.chair import Chair, Reply, make_speakable
 from aura.server.config import CredentialError, Settings, resolve_api_key
 from aura.server.council import Council, CouncilConfig, CouncilResult, Role
 from aura.server.profile import Pace, Profile, SubstanceLeakError, Verbosity
 
 __all__ = [
+    "Chair",
     "ClaudeBackend",
     "Council",
     "CouncilConfig",
@@ -18,9 +20,11 @@ __all__ = [
     "EchoBackend",
     "Pace",
     "Profile",
+    "Reply",
     "Role",
     "Settings",
     "SubstanceLeakError",
     "Verbosity",
+    "make_speakable",
     "resolve_api_key",
 ]
