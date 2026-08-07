@@ -11,10 +11,14 @@
 
 ---
 
-> ### ⚠️ Pre-alpha
-> Architecture and research are complete. **Implementation has not started.**
-> The interfaces below describe the intended design, not working software.
-> Star the repo if you'd like to know when it ships.
+> ### ⚠️ Early development
+> The **core logic is real and tested**: per-speaker baselines, the counter-regulation
+> policy, the profile, and council orchestration all work today and run without an API key.
+>
+> **Not yet built:** audio capture, echo cancellation, speech recognition, speech synthesis,
+> and the mobile client libraries. The `pip install aura-client` / Swift / Kotlin snippets
+> below describe the intended packaging, not published artifacts. See
+> [Setting it up](#setting-it-up) for what actually runs.
 
 ---
 
@@ -84,7 +88,10 @@ flowchart LR
 
 ---
 
-## Install
+## How it will be consumed
+
+> 📦 **Planned packaging, not yet published.** These are the intended entry points once the
+> client libraries are built. To run what exists today, see [Setting it up](#setting-it-up).
 
 **You install the client. The server is hosted for you** — there's nothing to run, provision, or
 maintain on your side.
@@ -195,16 +202,94 @@ can inspect, export, or delete. Not a hidden score.
 
 ---
 
+## Setting it up
+
+Two steps. The second is the only one that needs a decision.
+
+### 1 · Install
+
+```bash
+git clone https://github.com/fivestone14/Aura.git
+cd Aura
+uv venv --python 3.12
+uv pip install -e ".[claude]"
+```
+
+### 2 · Add an API key
+
+Store it in the system keychain — **not** a `.env` file, which is a project file that
+development tooling reads:
+
+```bash
+security add-generic-password -s aura -a anthropic -w
+```
+
+The `-w` with no value is deliberate: `security` prompts for the key instead of taking it
+on the command line, where it would be written to your shell history permanently.
+
+### 3 · Check it works
+
+```python
+from aura.server import ClaudeBackend, Council
+from aura.client import SpeakerBaseline, decide
+
+backend = ClaudeBackend.from_environment()   # finds the key on its own
+```
+
+If no key is configured, this raises with the exact command to run. Nothing else needs
+configuring — every other setting has a working default.
+
+<details>
+<summary><b>Optional tuning</b></summary>
+
+All settings are environment variables, so the same checkout runs unchanged on a laptop
+and on a host:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `AURA_MODEL` | `claude-opus-5` | Which model the council uses |
+| `AURA_COUNCIL_DEADLINE` | `2.0` | Seconds before slow members are dropped |
+| `AURA_BASELINE_WINDOW` | `50` | Turns of history per speaker |
+| `AURA_MAX_REPLY_TOKENS` | `512` | Ceiling on reply length |
+
+A malformed value stops startup rather than silently falling back to the default.
+</details>
+
+### Running without a key
+
+`EchoBackend` needs no credentials and exercises the whole pipeline, so the client half
+and all the orchestration can be developed and tested before any key exists:
+
+```python
+from aura.server import Council, EchoBackend
+result = await Council(EchoBackend()).deliberate(turn)
+```
+
+---
+
+## Testing
+
+The suite is kept local and is not published to the repository. To run it, write tests
+under `tests/` and:
+
+```bash
+uv pip install -e ".[dev]"
+.venv/bin/python -m pytest
+```
+
+
+---
+
 ## Roadmap
 
 | | Phase | State |
 |---|---|---|
 | **0** | Echo cancellation · TTS controllability · security gate | 🔜 Next |
-| **1** | End-to-end conversation, rules only | — |
+| **1** | End-to-end conversation, rules only | 🟡 Core logic done |
 | **2** | Real-time timing | — |
-| **3** | Prosody perception | — |
-| **4** | The council | — |
-| **5** | The Interpreter — per-user adaptation | — |
+| **3** | Prosody perception | 🟡 Baselines done, extraction pending |
+| **4** | The council | 🟡 Orchestration done, backend pending |
+| **5** | The Interpreter — per-user adaptation | 🟡 Profile done |
 | **6** | Appropriateness evaluation | — |
 | **7** | Packaging — client libraries per platform | — |
 
