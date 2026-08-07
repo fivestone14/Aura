@@ -8,6 +8,36 @@ constraints are load-bearing in non-obvious ways.
 
 ---
 
+## First principle
+
+> ### Stop trying to guess who someone is. Get better at noticing what they do.
+
+Every decision in this document is downstream of that one sentence. It is not a slogan — it is a
+test, and it has teeth. Whenever a design choice presents itself, ask which side of the line it
+falls on:
+
+| ❌ Guessing who they are | ✅ Noticing what they do |
+|---|---|
+| Infer a personality type from their voice | Record that long answers get interrupted |
+| Classify their emotion from acoustics | Measure that they're 30% faster than their own baseline |
+| Match a voiceprint to identify them | Read the certificate on their device |
+| Predict their preference from a category | Learn it from what they corrected |
+| Assume a stranger's needs from a 10-second sample | Start neutral, ask, and converge |
+
+**Why the left column keeps losing:** it is unfalsifiable at runtime. A guess about who someone
+*is* cannot be corrected by the person, because it was never checked against them — it just quietly
+steers everything downstream. An observation can be wrong, but it can also be *shown* to be wrong,
+and then fixed. The right column is self-correcting; the left column is confidently unaccountable.
+
+**It is also the cheaper column.** Observed behavior predicts outcomes roughly 7× better than
+inferred traits (§4), needs no labeled corpus, invites no regulatory exposure, and requires no
+model that could be wrong about a person in a way they cannot contest.
+
+**Design test:** if a proposed feature requires deciding *what kind of person* the user is before
+it can act, it belongs in the left column. Redesign it to act on something the user did instead.
+
+---
+
 ## 1. Counter-regulate, don't mirror
 
 **Decision:** When someone sounds rushed and tense, Aura replies *slower and quieter* — not matching
@@ -304,6 +334,27 @@ recent major launch was interrupting users and laughing at things that weren't j
 
 **Honest limit:** none of this defends against malware already running as the same OS user. It
 defends against device theft, other accounts, and network compromise. Claiming more would be false.
+
+---
+
+## 11. Audit: does the current design obey its own first principle?
+
+Applied honestly, including where it doesn't.
+
+| Component | Verdict |
+|---|---|
+| **Prosody perception** | ✅ **Notices.** Measures acoustics against the speaker's own baseline. No category assigned. |
+| **Turn-taking** | ✅ **Notices.** Predicts *when they'll stop talking* from the audio signal — a behavior, not a disposition, and confirmed or refuted within a second. |
+| **Identity** | ✅ **Notices.** Reads a certificate the user's device presents. Nothing inferred about the person. |
+| **The Interpreter** | ✅ **Notices.** Accumulates corrections given and behaviors observed. Stores rates with sample counts, never a type. |
+| **Prosody policy** | ⚠️ **Mixed — and deliberately so.** Counter-regulation is a *rule about arousal*, not a claim about the person, so it stays on the right side. But the rule itself is a prior we did not learn from this user. Mitigated by the guardrail eval and by the Interpreter overriding it per person. **Watch this one.** |
+| **Cold start** | ⚠️ **The weakest point.** On turn one there is nothing observed, so *something* must be assumed. The principle says: assume as little as possible, and **probe** rather than profile. A neutral default plus a fast question beats a confident guess. |
+| **Council** | ✅ **Notices.** Agent B interprets *what was meant in this turn* — a per-utterance reading that the next turn immediately tests. Not a standing claim about the person. |
+| ~~Personality inference~~ | 🚫 **Rejected.** This was pure left-column, and it is why the principle exists. |
+
+**The pattern:** every place the design felt uncomfortable turned out to be a place it was guessing.
+Every place it felt solid turned out to be a place it was measuring. That correspondence is the
+reason to trust the principle rather than merely state it.
 
 ---
 

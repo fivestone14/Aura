@@ -79,3 +79,11 @@ DerivedData/
 eval_output/
 results/
 *.jsonl
+
+# ─── TESTS — kept local, not published (see README "Testing") ────
+tests/
+.coverage
+htmlcov/
+
+# ─── TOOLING ARTIFACTS ───────────────────────────────────────────
+.claude/
