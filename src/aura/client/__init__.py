@@ -9,7 +9,32 @@ Nothing here requires credentials or a network connection. If the server is
 unreachable, this half still works — degraded, not dead.
 """
 
+from aura.client.audio import (
+    FRAME_MS,
+    FRAME_SAMPLES,
+    SAMPLE_RATE,
+    AudioLoop,
+    EchoCanceller,
+    Frame,
+    PassthroughCanceller,
+    ReferenceTap,
+    SubtractiveCanceller,
+)
 from aura.client.baseline import MIN_SAMPLES, SpeakerBaseline
 from aura.client.policy import PolicyDecision, decide
 
-__all__ = ["MIN_SAMPLES", "PolicyDecision", "SpeakerBaseline", "decide"]
+__all__ = [
+    "FRAME_MS",
+    "FRAME_SAMPLES",
+    "MIN_SAMPLES",
+    "SAMPLE_RATE",
+    "AudioLoop",
+    "EchoCanceller",
+    "Frame",
+    "PassthroughCanceller",
+    "PolicyDecision",
+    "ReferenceTap",
+    "SpeakerBaseline",
+    "SubtractiveCanceller",
+    "decide",
+]
