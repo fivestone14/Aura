@@ -21,6 +21,7 @@ from aura.client.audio import (
     SubtractiveCanceller,
 )
 from aura.client.baseline import MIN_SAMPLES, SpeakerBaseline
+from aura.client.negotiator import Acknowledgement, Decision, Negotiator
 from aura.client.policy import PolicyDecision, decide
 
 __all__ = [
@@ -28,9 +29,12 @@ __all__ = [
     "FRAME_SAMPLES",
     "MIN_SAMPLES",
     "SAMPLE_RATE",
+    "Acknowledgement",
     "AudioLoop",
+    "Decision",
     "EchoCanceller",
     "Frame",
+    "Negotiator",
     "PassthroughCanceller",
     "PolicyDecision",
     "ReferenceTap",
