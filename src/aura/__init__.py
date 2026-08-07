@@ -9,6 +9,13 @@ First principle: stop trying to guess who someone is; get better at noticing wha
 they do.
 """
 
+from aura.session import Session, SpokenReply
+from aura.transport import (
+    ThinkRequest,
+    ThinkResponse,
+    Transport,
+    UnavailableTransport,
+)
 from aura.types import (
     EGEMAPS_FEATURE_COUNT,
     ProsodyDelta,
@@ -26,6 +33,12 @@ __all__ = [
     "ProsodyFrame",
     "ProsodyTarget",
     "Register",
+    "Session",
+    "SpokenReply",
+    "ThinkRequest",
+    "ThinkResponse",
+    "Transport",
     "Turn",
+    "UnavailableTransport",
     "__version__",
 ]
