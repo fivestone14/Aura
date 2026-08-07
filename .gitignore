@@ -1,0 +1,81 @@
+# ─── SECRETS — never commit ──────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets.*
+config.yaml            # local config; config.example.yaml is tracked instead
+config.local.*
+*.tailscale.key
+*_authkey*
+credentials*
+.netrc
+
+# ─── PERSONAL DATA — never commit ────────────────────────────────
+profiles/
+*.sqlite
+*.sqlite3
+*.db
+transcripts/
+audio/
+recordings/
+*.wav
+*.mp3
+*.flac
+*.opus
+*.m4a
+prosody_logs/
+
+# ─── MODEL WEIGHTS — reference by URL + checksum, don't commit ───
+models/
+*.onnx
+*.mlmodel
+*.mlpackage
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# ─── BUILD / ENV ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.uv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+DerivedData/
+*.xcframework
+.build/
+
+# ─── EDITOR / OS ─────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# ─── EVAL OUTPUT (can contain verbatim user speech) ──────────────
+# Deliberately broad: eval traces routinely embed what the user said.
+# Whitelist specific files with ! if a dataset genuinely must be tracked.
+eval_output/
+results/
+*.jsonl
