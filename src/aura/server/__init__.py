@@ -9,6 +9,7 @@ from aura.server.chair import Chair, Reply, make_speakable
 from aura.server.config import CredentialError, Settings, resolve_api_key
 from aura.server.council import Council, CouncilConfig, CouncilResult, Role
 from aura.server.profile import Pace, Profile, SubstanceLeakError, Verbosity
+from aura.server.service import LocalService
 
 __all__ = [
     "Chair",
@@ -18,6 +19,7 @@ __all__ = [
     "CouncilResult",
     "CredentialError",
     "EchoBackend",
+    "LocalService",
     "Pace",
     "Profile",
     "Reply",
