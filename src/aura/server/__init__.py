@@ -10,6 +10,7 @@ from aura.server.config import CredentialError, Settings, resolve_api_key
 from aura.server.council import Council, CouncilConfig, CouncilResult, Role
 from aura.server.profile import Pace, Profile, SubstanceLeakError, Verbosity
 from aura.server.service import LocalService
+from aura.server.store import JsonStore, MemoryStore, ProfileStore
 
 __all__ = [
     "Chair",
@@ -19,9 +20,12 @@ __all__ = [
     "CouncilResult",
     "CredentialError",
     "EchoBackend",
+    "JsonStore",
     "LocalService",
+    "MemoryStore",
     "Pace",
     "Profile",
+    "ProfileStore",
     "Reply",
     "Role",
     "Settings",

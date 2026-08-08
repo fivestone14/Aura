@@ -14,6 +14,7 @@ from __future__ import annotations
 from aura.server.chair import Chair
 from aura.server.council import Council
 from aura.server.profile import Profile
+from aura.server.store import MemoryStore, ProfileStore
 from aura.transport import ThinkRequest, ThinkResponse, Transport
 from aura.types import ProsodyFrame, ProsodyTarget, Turn
 
@@ -31,22 +32,39 @@ class LocalService(Transport):
         council: Council,
         chair: Chair | None = None,
         *,
-        profiles: dict[str, Profile] | None = None,
+        store: ProfileStore | None = None,
     ) -> None:
         self._council = council
         self._chair = chair or Chair()
-        self._profiles: dict[str, Profile] = profiles if profiles is not None else {}
+        self._store = store if store is not None else MemoryStore()
+        # Profiles are cached in memory for the life of the service: a turn is on the
+        # latency path and must not wait on disk. Writes go through on change.
+        self._cache: dict[str, Profile] = {}
+
+    @property
+    def store(self) -> ProfileStore:
+        return self._store
 
     def profile_for(self, session_key: str) -> Profile:
-        """Get or create the profile for a session key.
+        """Get the profile for a session key, loading it from storage on first use.
 
-        Created lazily: a first-time caller gets a neutral profile rather than an error,
-        which is the cold-start behaviour the design calls for — start neutral rather
-        than guess (docs/DESIGN.md §4).
+        A first-time caller gets a neutral profile rather than an error — the
+        cold-start behaviour the design calls for (docs/DESIGN.md §4).
         """
-        if session_key not in self._profiles:
-            self._profiles[session_key] = Profile(key=session_key)
-        return self._profiles[session_key]
+        if session_key not in self._cache:
+            self._cache[session_key] = self._store.get_or_create(session_key)
+        return self._cache[session_key]
+
+    def persist(self, session_key: str) -> None:
+        """Write a profile back to storage.
+
+        Explicit rather than automatic on every turn: saving is I/O, a turn is on the
+        latency path, and most turns change nothing. Callers persist after a correction
+        or at the end of a session.
+        """
+        profile = self._cache.get(session_key)
+        if profile is not None:
+            self._store.save(profile)
 
     async def think(self, request: ThinkRequest) -> ThinkResponse:
         """Handle one turn.
