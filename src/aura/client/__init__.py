@@ -24,6 +24,14 @@ from aura.client.audio import (
 from aura.client.baseline import MIN_SAMPLES, SpeakerBaseline
 from aura.client.negotiator import Acknowledgement, Decision, Negotiator
 from aura.client.policy import PolicyDecision, decide
+from aura.client.turntaking import (
+    EnergyVad,
+    SilenceDetector,
+    TurnDetector,
+    TurnEvent,
+    TurnSignal,
+    Vad,
+)
 
 __all__ = [
     "FRAME_MS",
@@ -34,13 +42,19 @@ __all__ = [
     "AudioLoop",
     "Decision",
     "EchoCanceller",
+    "EnergyVad",
     "Frame",
     "Negotiator",
     "PassthroughCanceller",
     "PolicyDecision",
     "ReferenceTap",
+    "SilenceDetector",
     "SpeakerBaseline",
     "SubtractiveCanceller",
+    "TurnDetector",
+    "TurnEvent",
+    "TurnSignal",
     "UpstreamCanceller",
+    "Vad",
     "decide",
 ]
