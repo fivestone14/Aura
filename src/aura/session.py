@@ -151,6 +151,20 @@ class Session:
         """
         return self.audio.is_echo_protected
 
+    @property
+    def supports_two_channel_turn_taking(self) -> bool:
+        """Whether a turn-taking model can get both channels here.
+
+        Under WebRTC, echo cancellation happens upstream and consumes the reference
+        signal, so the application only ever sees the cleaned microphone channel. A
+        model that wants to hear both sides has to source Aura's own audio from the
+        synthesis path instead.
+
+        This is a wiring-time question, so it is answerable at wiring time rather than
+        manifesting later as a model that silently receives one channel of silence.
+        """
+        return self.audio.has_reference_signal
+
     def reset(self) -> None:
         """Clear everything session-scoped. The server-side profile is untouched."""
         self.baseline = SpeakerBaseline()

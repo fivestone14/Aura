@@ -151,6 +151,34 @@ class PassthroughCanceller(EchoCanceller):
         return None
 
 
+class UpstreamCanceller(EchoCanceller):
+    """Audio that was already cleaned before it reached us.
+
+    This is the WebRTC case. WebRTC runs acoustic echo cancellation inside the browser
+    and native SDKs, *before* the application sees a frame — so by the time audio
+    arrives here the echo is gone and there is nothing left to do.
+
+    Structurally identical to `PassthroughCanceller`; semantically the opposite.
+    Passthrough means "nothing is protecting you". This means "something upstream
+    already did it". They must be distinguishable, because `AudioLoop` refuses to call
+    itself echo-protected on the first and does on the second — and getting that
+    backwards is exactly the silent failure the module exists to prevent.
+
+    ⚠️ **Known cost of this path.** The reference signal is consumed upstream, so the
+    application never sees what was played. Anything else that wanted that signal — a
+    two-channel turn-taking model, for instance — needs its own source. `AudioLoop`
+    reports this through `has_reference_signal` rather than letting it be discovered
+    later as a confusing absence.
+    """
+
+    def process(self, captured: Frame, reference: Frame | None) -> Frame:
+        del reference
+        return captured
+
+    def reset(self) -> None:
+        return None
+
+
 class SubtractiveCanceller(EchoCanceller):
     """A deliberately simple canceller: scaled subtraction of the reference.
 
@@ -212,12 +240,28 @@ class AudioLoop:
 
     @property
     def is_echo_protected(self) -> bool:
-        """False when nothing is actually removing Aura's voice from the input.
+        """Whether anything is removing Aura's voice from the input.
 
-        Worth asserting before a live session: a passthrough canceller with real
-        playback is the silent-failure case this whole module exists to prevent.
+        True for a real canceller *and* for `UpstreamCanceller`, where the work already
+        happened before we saw the audio. False only for `PassthroughCanceller`, which
+        is the silent-failure case this whole module exists to prevent.
         """
         return not isinstance(self._canceller, PassthroughCanceller)
+
+    @property
+    def has_reference_signal(self) -> bool:
+        """Whether the application can see what was played.
+
+        False under `UpstreamCanceller`: WebRTC consumes the reference internally, so
+        the frames never reach us. Everything downstream that wanted that signal — a
+        two-channel turn-taking model, echo diagnostics, playback verification — has to
+        source it another way.
+
+        Exposed as a property rather than left implicit so the constraint is
+        discoverable at wiring time instead of surfacing later as a component that
+        mysteriously receives silence.
+        """
+        return not isinstance(self._canceller, UpstreamCanceller)
 
     def play(self, samples: array.array[int]) -> Frame:
         """Send a frame to the speaker, recording it for cancellation."""

@@ -254,6 +254,29 @@ of a continuous stream — simultaneously the latency win, the bandwidth win, an
 **Graceful degradation is a design goal.** With the server unreachable, the client still hears,
 still takes turns, still acknowledges. The system gets *dumber*, not *dead*.
 
+### Audio stack: WebRTC, decided 2026-08-07
+
+Echo cancellation, barge-in handling, noise suppression, and NAT traversal all come with
+WebRTC, which is why every production voice system is built on it — the same stack the
+major realtime voice APIs ship through. Writing our own would mean native bindings,
+per-platform builds, and tuning an adaptive filter by hand: the most difficult work in
+the project, to arrive at a worse version of something that already exists.
+
+⚠️ **The cost, recorded because it is easy to rediscover painfully.** WebRTC cancels
+*before* the application sees a frame, so it consumes the reference signal. The original
+design used one reference tap for two consumers — echo cancellation and the second
+channel of a two-channel turn-taking model. Only the first survives.
+
+The code makes this visible rather than implicit: `AudioLoop.has_reference_signal` and
+`Session.supports_two_channel_turn_taking` both report false on this path. A turn-taking
+model that wants both sides must take Aura's channel from the synthesis output instead of
+the audio loop. That is a wiring change, and it is answerable at wiring time.
+
+`UpstreamCanceller` and `PassthroughCanceller` are structurally identical and
+semantically opposite — "already handled" versus "nothing is protecting you". They are
+deliberately separate types, because conflating them reintroduces exactly the silent
+failure this module exists to prevent.
+
 **Independent validation:** the lab that produced the strongest open full-duplex speech model
 subsequently moved to a modular architecture with a swappable text model, and the major commercial
 launch in this space uses a fast voice model that delegates to a frontier model in the background.

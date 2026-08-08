@@ -19,6 +19,7 @@ from aura.client.audio import (
     PassthroughCanceller,
     ReferenceTap,
     SubtractiveCanceller,
+    UpstreamCanceller,
 )
 from aura.client.baseline import MIN_SAMPLES, SpeakerBaseline
 from aura.client.negotiator import Acknowledgement, Decision, Negotiator
@@ -40,5 +41,6 @@ __all__ = [
     "ReferenceTap",
     "SpeakerBaseline",
     "SubtractiveCanceller",
+    "UpstreamCanceller",
     "decide",
 ]
