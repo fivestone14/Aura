@@ -381,6 +381,35 @@ reason to trust the principle rather than merely state it.
 
 ---
 
+## Backlog — deliberately deferred
+
+**Scoring sets** (built 2026-08-09, parked 2026-08-09). The guardrail and sycophancy
+sets exist and pass, but they were built ahead of a working system, so they are scoring
+logic against logic rather than against speech. They stay in the tree and stay green;
+they become meaningful once real audio flows. Revisit when speech recognition and
+synthesis land.
+
+**Commands in the payload.** Raised 2026-08-09: the context payload could carry
+*actions* as well as description — an LLM emitting instructions that modify a running
+application, not just words to speak. This is a genuine extension of the "payload any
+system can consume" framing and is worth doing.
+
+⚠️ Two things to settle before building it, both recorded now so the decision is not
+made by accident later:
+
+- **Direction.** Commands *out* (the model tells the host app to do something) and
+  context *in* (the host app tells the payload what is currently on screen) are different
+  designs with different wire shapes. Probably both eventually; the first one built sets
+  the pattern.
+- 🚨 **This is the prompt-injection path.** §10 already establishes that anyone within
+  earshot can speak into the microphone, and that injected transcript text has caused
+  models to emit attacker-chosen instructions. A payload that carries commands turns that
+  from "says something wrong" into "does something wrong". Any command surface needs the
+  same treatment as `set_persona`: an explicit allow-list, and human confirmation for
+  anything irreversible.
+
+---
+
 ## Open questions
 
 | Question | Why it matters |
