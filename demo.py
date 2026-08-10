@@ -41,5 +41,14 @@ async def main() -> None:
     print(f"turns={session.stats.turns} fallbacks={session.stats.fallbacks}")
 
 
+def show_eval() -> None:
+    """Score the system against the cases it must not get wrong."""
+    from aura.evaluation import format_report, run_all
+
+    print("=" * 58)
+    print(format_report(asyncio.run(run_all())))
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+    show_eval()

@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from aura.server.profile import Pace, Profile, Verbosity
-from aura.types import ProsodyDelta, ProsodyTarget, Register
+from aura.types import ProsodyDelta, ProsodyFrame, ProsodyTarget, Register
 
 ACTIVATION_THRESHOLD = 0.75
 """Standard deviations above a speaker's own norm before counter-regulation engages.
@@ -29,6 +29,20 @@ distressed — only that they are well outside their own normal range."""
 FLATNESS_THRESHOLD = -1.0
 """Pitch range this far below normal reads as withdrawn or exhausted. The correct
 response is warmth, not calm — calm on top of flat is just cold."""
+
+FLAT_ABSOLUTE_MAX_SEMITONES = 3.0
+"""Flatness also has to be true in absolute terms, not only relative to the speaker.
+
+Found by the guardrail set: a speaker who is quieter and slower than usual but whose
+pitch range is still 5.5 semitones was being treated as withdrawn and given warmth,
+which reads as patronising. Their z-score was -1.0 purely because a consistent baseline
+gets its standard deviation raised to the variance floor, so a half-semitone drop scores
+as a full sigma.
+
+Ordinary expressive speech runs roughly 4-8 semitones; genuinely monotone speech is
+under about 3. Requiring both conditions means the relative signal has to be corroborated
+by the speech actually being flat.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,11 +57,20 @@ class PolicyDecision:
     rationale: str
 
 
-def decide(delta: ProsodyDelta | None, profile: Profile | None = None) -> PolicyDecision:
+def decide(
+    delta: ProsodyDelta | None,
+    profile: Profile | None = None,
+    frame: ProsodyFrame | None = None,
+) -> PolicyDecision:
     """Choose delivery for one reply.
 
     `delta` is None when the speaker has no baseline yet. That is a real state, not an
     error, and it has its own correct behaviour: stay neutral rather than guess.
+
+    `frame` carries the absolute measurements. Optional, because most of the policy is
+    purely relative — but flatness needs it, since "monotone" is partly a fact about the
+    speech rather than only about the speaker's own range. Omitting it makes the
+    flatness branch conservative: it will not fire without corroboration.
     """
     if delta is None:
         return PolicyDecision(
@@ -57,7 +80,7 @@ def decide(delta: ProsodyDelta | None, profile: Profile | None = None) -> Policy
 
     activation = delta.activation
 
-    if delta.pitch_range_z <= FLATNESS_THRESHOLD and activation < ACTIVATION_THRESHOLD:
+    if _is_flat(delta, frame) and activation < ACTIVATION_THRESHOLD:
         base = ProsodyTarget(
             rate_scale=0.95,
             pitch_shift_semitones=0.5,
@@ -65,7 +88,10 @@ def decide(delta: ProsodyDelta | None, profile: Profile | None = None) -> Policy
             pause_scale=1.1,
             register=Register.WARM,
         )
-        rationale = f"flat delivery (pitch range {delta.pitch_range_z:+.1f}σ) — warmth, not calm"
+        absolute = f", {frame.pitch_range_semitones:.1f}st" if frame else ""
+        rationale = (
+            f"flat delivery (pitch range {delta.pitch_range_z:+.1f}σ{absolute}) — warmth, not calm"
+        )
 
     elif activation >= ACTIVATION_THRESHOLD:
         # Interpolate rather than snapping between fixed levels. A step function would
@@ -118,6 +144,24 @@ def _apply_profile(target: ProsodyTarget, profile: Profile | None) -> ProsodyTar
         pause_scale=pause,
         register=target.register,
     )
+
+
+def _is_flat(delta: ProsodyDelta, frame: ProsodyFrame | None) -> bool:
+    """Whether the speaker sounds genuinely monotone.
+
+    Two conditions, both required. The relative one says their range collapsed compared
+    to their own norm; the absolute one says the result is actually flat speech rather
+    than a small drop from an expressive baseline.
+
+    With no frame the absolute condition cannot be checked, so this returns False —
+    conservative on purpose, since wrongly adding warmth is patronising and wrongly
+    withholding it is merely neutral.
+    """
+    if delta.pitch_range_z > FLATNESS_THRESHOLD:
+        return False
+    if frame is None:
+        return False
+    return frame.pitch_range_semitones <= FLAT_ABSOLUTE_MAX_SEMITONES
 
 
 def _clamp(value: float, low: float, high: float) -> float:

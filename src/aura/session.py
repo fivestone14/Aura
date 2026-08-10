@@ -94,7 +94,7 @@ class Session:
 
         # Tone is decided here, not on the server: the baseline is client-side, and
         # sending it upstream would mean sending a model of the user's voice.
-        decision = decide(delta, profile=None)
+        decision = decide(delta, profile=None, frame=prosody)
 
         started = time.monotonic()
         response = await self.transport.think(
