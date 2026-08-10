@@ -2,10 +2,10 @@
 
 # Aura
 
-**A voice pipeline that listens to *how* you talk — not just what you say.**
+**Augmented transcription. It captures *how* something was said, not just what.**
 
-*Most voice AI transcribes your words and throws the rest away.*
-*Aura keeps the rest, and answers in a tone chosen to fit.*
+*Transcription hands a model the words and throws the rest away.*
+*Aura hands it the words, how they were spoken, and what a person would do about it.*
 
 </div>
 
@@ -14,6 +14,9 @@
 > ### ⚠️ Early development
 > The **core logic is real and tested**: per-speaker baselines, the counter-regulation
 > policy, the profile, and council orchestration all work today and run without an API key.
+>
+> **The context payload is the finished part** — it runs today with no API key, no network and no
+> microphone. `python demo.py` shows it.
 >
 > **Not yet built:** audio capture, echo cancellation, speech recognition, speech synthesis,
 > and the mobile client libraries. The `pip install aura-client` / Swift / Kotlin snippets
@@ -26,10 +29,32 @@
 
 You're talking fast. Clipped sentences, no pauses, voice a little tight.
 
-Every current assistant hears **the words**. Aura also hears **the tension** — and answers slower
-and quieter than you're speaking, because matching your energy would make it worse.
+A transcript of that reads exactly the same as if you'd said it calmly. Everything that told a
+listener how to answer is gone before the model ever sees it.
 
-That's the whole product. Everything else is engineering.
+Aura keeps it — and hands the model something it can actually reason with:
+
+```
+How this was said: markedly more activated than they normally sound
+- speaking much faster than they usually do (+4.0 SD from their norm)
+- barely pausing at all (-4.0 SD from their norm)
+
+Note: Raised pitch, volume and speed look the same whether someone is
+excited, amused, anxious or annoyed. The sound cannot separate these —
+use the words for that.
+
+Given how they sound, a person answering them would probably:
+- give one answer rather than a list — nobody in this state holds five things at once
+- address the immediate thing they asked, not the general case around it
+
+Suggested delivery: noticeably slower, quieter and lower than they are speaking
+```
+
+**That payload is the product.** Drop it into whatever model you already use. It's plain text or
+JSON, it names no emotions, and it states its own limits.
+
+The reference pipeline around it — echo handling, turn-taking, a voice that applies the delivery
+hint — is included and swappable. Use it, or use only the payload.
 
 **It isn't a hunch.** In a study of over a million human ratings, only **4 of 15** speech-to-speech
 systems performed *better* with audio than with a plain transcript. Most "voice-native" AI already
@@ -81,6 +106,7 @@ flowchart LR
 
 | | Runs where | Why there |
 |---|---|---|
+| **the payload** | Anywhere | Plain text or JSON. No dependency on the rest of this. |
 | **`aura-client`** | Inside your app | Some jobs can't wait. Echo cancellation needs the speaker signal *as it plays*, and the "mm-hm" that keeps a conversation alive must land in ~200 ms. A network round trip costs more than the entire budget. |
 | **`aura-server`** | Hosted | The thinking. Allowed to be slow, because the client is covering. |
 
