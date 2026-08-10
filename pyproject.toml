@@ -10,6 +10,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6", "mypy>=1.11"]
 claude = ["anthropic>=0.40"]
+speech = ["kokoro>=0.9", "torch>=2.4"]
 
 [build-system]
 requires = ["hatchling"]
@@ -34,7 +35,7 @@ files = ["src"]
 
 [[tool.mypy.overrides]]
 # Optional dependency — imported lazily so the package works without it.
-module = ["anthropic.*"]
+module = ["anthropic.*", "kokoro.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -24,6 +24,7 @@ from aura.client.audio import (
 from aura.client.baseline import MIN_SAMPLES, SpeakerBaseline
 from aura.client.negotiator import Acknowledgement, Decision, Negotiator
 from aura.client.policy import PolicyDecision, decide
+from aura.client.render import KokoroRenderer, NullRenderer, RenderedSpeech, Renderer
 from aura.client.turntaking import (
     EnergyVad,
     SilenceDetector,
@@ -44,10 +45,14 @@ __all__ = [
     "EchoCanceller",
     "EnergyVad",
     "Frame",
+    "KokoroRenderer",
     "Negotiator",
+    "NullRenderer",
     "PassthroughCanceller",
     "PolicyDecision",
     "ReferenceTap",
+    "RenderedSpeech",
+    "Renderer",
     "SilenceDetector",
     "SpeakerBaseline",
     "SubtractiveCanceller",

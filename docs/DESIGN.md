@@ -385,7 +385,7 @@ reason to trust the principle rather than merely state it.
 
 | Question | Why it matters |
 |---|---|
-| Are the chosen TTS model's prosody predictors reachable at inference? | The renderer choice depends on it. There is a documented fallback if not. |
+| ~~Are the TTS model's prosody predictors reachable?~~ | ✅ **Resolved 2026-08-09.** Yes. Kokoro's forward pass is thirty lines of plain PyTorch; duration, pitch and energy are all local variables passed into the vocoder, so a subclass can scale all three. No fork needed. The GPL-3 fallback is no longer on the table. |
 | Do the Apple Silicon ports of that model hold up? | Edge deployment depends on it; the ports are community-maintained. |
 | How many turns before a learned profile beats a neutral default? | Determines whether cold-start work is worth doing. |
 | Does the council survive its A/B? | See §8. |
