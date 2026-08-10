@@ -67,8 +67,22 @@ class ProsodyContext:
     that need to gate on "is anything unusual here" without parsing prose."""
 
     suggested_delivery: str = ""
-    """A recommendation, not an instruction. Separate from the observations so a caller
-    can take the description and ignore the advice."""
+    """How to *say* it. A recommendation, not an instruction. Separate from the
+    observations so a caller can take the description and ignore the advice."""
+
+    response_shape: tuple[str, ...] = ()
+    """How to *think* about it — the part that matters more than tone.
+
+    A person hearing someone rushed doesn't only soften their voice; they reason
+    differently. They give one thing instead of five options, address the immediate
+    problem rather than the general case, and ask a question instead of enumerating
+    possibilities. That is what makes a reply feel considered rather than generated.
+
+    ⚠️ **Shape, never substance.** "Give them one option rather than a list" is a claim
+    about the form of a good answer. "Tell them what they want to hear" would be a claim
+    about its content, and would make this a sycophancy channel (docs/DESIGN.md §5).
+    Nothing here may change *what is true*, only how much of it arrives at once.
+    """
 
     def to_prompt(self) -> str:
         """Render for a system prompt.
@@ -85,6 +99,10 @@ class ProsodyContext:
         if self.caveats:
             lines.append("")
             lines.extend(f"Note: {c}" for c in self.caveats)
+        if self.response_shape:
+            lines.append("")
+            lines.append("Given how they sound, a person answering them would probably:")
+            lines.extend(f"- {r}" for r in self.response_shape)
         if self.suggested_delivery:
             lines.append("")
             lines.append(f"Suggested delivery: {self.suggested_delivery}")
@@ -97,6 +115,7 @@ class ProsodyContext:
             "caveats": list(self.caveats),
             "markedness": self.markedness,
             "suggested_delivery": self.suggested_delivery,
+            "response_shape": list(self.response_shape),
         }
 
     @classmethod
@@ -107,6 +126,7 @@ class ProsodyContext:
             caveats=tuple(payload.get("caveats", ())),
             markedness=float(payload.get("markedness", 0.0)),
             suggested_delivery=payload.get("suggested_delivery", ""),
+            response_shape=tuple(payload.get("response_shape", ())),
         )
 
 
@@ -176,6 +196,11 @@ def build_context(
                 "so nothing here should be read as unusual.",
             ),
             suggested_delivery="neutral — there is no basis for anything else yet",
+            response_shape=(
+                "answer plainly, without assuming anything about them",
+                "if the request is ambiguous, ask rather than guess — there is no history "
+                "to guess from",
+            ),
         )
 
     scored = [
@@ -193,6 +218,9 @@ def build_context(
             summary="sounds much as they usually do",
             markedness=markedness,
             suggested_delivery="no adjustment needed",
+            response_shape=(
+                "answer normally — nothing about how they sound changes what is useful",
+            ),
         )
 
     return ProsodyContext(
@@ -201,6 +229,7 @@ def build_context(
         caveats=_caveats(delta, frame),
         markedness=markedness,
         suggested_delivery=_suggest(delta, frame),
+        response_shape=_shape(delta, frame),
     )
 
 
@@ -286,6 +315,57 @@ def _suggest(delta: ProsodyDelta, frame: ProsodyFrame | None) -> str:
     if delta.activation >= 0.75:
         return "slightly slower and quieter than they are speaking"
     return "no adjustment needed"
+
+
+def _shape(delta: ProsodyDelta, frame: ProsodyFrame | None) -> tuple[str, ...]:
+    """How a person would reason about this, given how it sounded.
+
+    This is the part that separates a considered reply from a generated one. Tone alone
+    does not fix a system that answers a rushed, half-formed question with four
+    paragraphs and a bulleted list of alternatives — the delivery would be gentle and the
+    response would still be wrong for the moment.
+
+    ⚠️ Every line here constrains *form*: how much, how many, whether to ask. None
+    constrains content. Adding a line that changed the answer rather than its shape would
+    turn this into the sycophancy channel §5 exists to prevent.
+    """
+    shape: list[str] = []
+    activation = delta.activation
+    flat = frame is not None and frame.pitch_range_semitones <= 3.0
+    rushing = delta.pause_z <= -1.0 or delta.rate_z >= 1.5
+
+    if activation >= 1.5:
+        shape.append(
+            "give one answer rather than a list of options — someone in this state cannot "
+            "hold five things at once"
+        )
+        shape.append(
+            "address the immediate thing they asked, not the general case around it"
+        )
+    elif activation >= 0.75:
+        shape.append("keep it to the single most useful point rather than covering the ground")
+
+    if rushing:
+        shape.append(
+            "they are moving fast; a short answer now is worth more than a complete one later"
+        )
+
+    if flat and delta.pitch_range_z <= -1.0:
+        shape.append(
+            "low engagement — a long answer is unlikely to land. One sentence, or a "
+            "question that gives them something easy to respond to"
+        )
+
+    if delta.pause_z >= 1.5 and activation < 0.75:
+        shape.append(
+            "they are pausing more than usual, which often means thinking rather than "
+            "finishing — leave room instead of filling it"
+        )
+
+    if not shape:
+        shape.append("nothing about how they sound suggests changing the shape of the answer")
+
+    return tuple(shape)
 
 
 @dataclass
