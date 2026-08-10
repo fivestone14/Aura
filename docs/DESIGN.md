@@ -397,10 +397,11 @@ system can consume" framing and is worth doing.
 ⚠️ Two things to settle before building it, both recorded now so the decision is not
 made by accident later:
 
-- **Direction.** Commands *out* (the model tells the host app to do something) and
-  context *in* (the host app tells the payload what is currently on screen) are different
-  designs with different wire shapes. Probably both eventually; the first one built sets
-  the pattern.
+- ~~**Direction.**~~ ✅ **Settled 2026-08-09: context flows *in* first.** `AppState`
+  carries what the host application is showing — screen, selection, a few details — so
+  "open that one" becomes answerable. It adds no attack surface, because it arrives
+  through code rather than a microphone, and it makes replies markedly more situated.
+  Commands flowing *out* remain deferred.
 - 🚨 **This is the prompt-injection path.** §10 already establishes that anyone within
   earshot can speak into the microphone, and that injected transcript text has caused
   models to emit attacker-chosen instructions. A payload that carries commands turns that

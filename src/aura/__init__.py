@@ -9,7 +9,7 @@ First principle: stop trying to guess who someone is; get better at noticing wha
 they do.
 """
 
-from aura.context import ContextBundle, ProsodyContext, build_context
+from aura.context import AppState, ContextBundle, ProsodyContext, build_context
 from aura.session import Session, SpokenReply
 from aura.transport import (
     ThinkRequest,
@@ -30,6 +30,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "EGEMAPS_FEATURE_COUNT",
+    "AppState",
     "ContextBundle",
     "ProsodyContext",
     "ProsodyDelta",

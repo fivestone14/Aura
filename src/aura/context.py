@@ -368,6 +368,86 @@ def _shape(delta: ProsodyDelta, frame: ProsodyFrame | None) -> tuple[str, ...]:
     return tuple(shape)
 
 
+MAX_SCREEN_NAME = 64
+MAX_SELECTION = 200
+MAX_DETAILS = 6
+"""Bounds on host-supplied state.
+
+Not security limits — the host application is trusted, unlike the transcript. These stop
+an over-enthusiastic integration from pasting a whole view hierarchy into every prompt,
+which costs latency on the critical path and buries the parts that matter.
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class AppState:
+    """What the surrounding application is currently showing.
+
+    The counterpart to prosody: prosody says *how* someone spoke, this says *where they
+    were* when they spoke. "Open that one" is unanswerable without it and obvious with it.
+
+    ⚠️ **Trust boundary — different from the transcript.** This comes from the host
+    application through code, not from a microphone. Nobody standing nearby can inject
+    it, so unlike the transcript it is not wrapped as untrusted. That distinction is the
+    whole reason this direction was built before commands flowing the other way.
+
+    ⚠️ **Describes, never instructs.** A field saying "the user wants X" would smuggle
+    substance in through the side door. This says what is on screen; the model draws its
+    own conclusions.
+    """
+
+    screen: str = ""
+    """Where they are. A name a person would recognise — "settings", "inbox"."""
+
+    selection: str = ""
+    """What is currently selected or focused, in a short phrase."""
+
+    details: tuple[str, ...] = ()
+    """Anything else worth knowing. Kept short; this is context, not a state dump."""
+
+    def __post_init__(self) -> None:
+        if len(self.screen) > MAX_SCREEN_NAME:
+            raise ValueError(f"screen name over {MAX_SCREEN_NAME} chars: {len(self.screen)}")
+        if len(self.selection) > MAX_SELECTION:
+            raise ValueError(f"selection over {MAX_SELECTION} chars: {len(self.selection)}")
+        if len(self.details) > MAX_DETAILS:
+            raise ValueError(
+                f"at most {MAX_DETAILS} details; got {len(self.details)}. "
+                "This is context for one turn, not a view hierarchy."
+            )
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.screen or self.selection or self.details)
+
+    def describe(self) -> str:
+        """One block of plain text, or empty when there is nothing to say."""
+        if self.is_empty:
+            return ""
+        parts: list[str] = []
+        if self.screen:
+            parts.append(f"They are looking at: {self.screen}")
+        if self.selection:
+            parts.append(f"Currently selected: {self.selection}")
+        parts.extend(self.details)
+        return "\n".join(parts)
+
+    def to_wire(self) -> dict[str, Any]:
+        return {"screen": self.screen, "selection": self.selection, "details": list(self.details)}
+
+    @classmethod
+    def from_wire(cls, payload: dict[str, Any] | None) -> AppState | None:
+        """Absent state is None, not an empty object — callers should be able to tell
+        "the app told us nothing" from "the app told us it is showing nothing"."""
+        if not payload:
+            return None
+        return cls(
+            screen=payload.get("screen", ""),
+            selection=payload.get("selection", ""),
+            details=tuple(payload.get("details", ())),
+        )
+
+
 @dataclass
 class ContextBundle:
     """Everything about one turn, ready to hand to a model.
@@ -383,8 +463,24 @@ class ContextBundle:
     """Standing delivery preferences. Delivery only — never a stance
     (docs/DESIGN.md §5)."""
 
+    app_state: AppState | None = None
+    """What the surrounding application is showing, when the host chooses to supply it.
+
+    Optional by design: Aura must work embedded in something that knows nothing about
+    its own UI. Absent means absent — no placeholder text, no apology, just a shorter
+    prompt.
+    """
+
     def to_prompt(self) -> str:
         parts = [self.prosody.to_prompt()]
+
+        # Situation before preferences: where someone is changes what a question means,
+        # whereas preferences only change how the answer is phrased.
+        if self.app_state is not None and not self.app_state.is_empty:
+            parts.append("")
+            parts.append("What they can see right now:")
+            parts.append(self.app_state.describe())
+
         if self.profile_notes:
             parts.append("")
             parts.append("What this person has asked for previously:")
